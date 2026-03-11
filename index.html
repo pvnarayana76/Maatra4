@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Akshara Alchemist - Focus Mode</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --accent-blue: #38bdf8;
+            --accent-gold: #fbbf24;
+            --text-light: #f1f5f9;
+            --success-green: #4ade80;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-light);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        /* TIGHTENED MAIN WRAPPER */
+        .main-wrapper {
+            width: 100%;
+            max-width: 850px; /* This brings the ends closer together */
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        header { text-align: center; }
+        h1 { margin: 0; font-size: 1.6rem; color: var(--accent-blue); }
+
+        .progress-container {
+            width: 200px;
+            height: 6px;
+            background: #334155;
+            border-radius: 5px;
+            margin: 10px auto;
+            overflow: hidden;
+        }
+        #progress-bar { width: 0%; height: 100%; background: var(--success-green); transition: width 0.3s; }
+
+        #mission-goal { font-size: 1.2rem; display: flex; align-items: center; gap: 15px; }
+        #target-text { color: var(--accent-gold); font-weight: bold; font-size: 2.5rem; border-bottom: 2px solid #334155; padding: 0 10px; }
+
+        /* THE COMPACT GAME GRID */
+        .game-container {
+            display: grid;
+            grid-template-columns: 130px 1fr 130px;
+            gap: 20px;
+            width: 100%;
+            height: 50vh;
+            align-items: center;
+        }
+
+        .bank {
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+            border-radius: 15px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 15px 10px;
+            overflow-y: auto;
+            align-items: center;
+        }
+
+        .bank::-webkit-scrollbar { width: 0; }
+
+        .forge-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #transformation-circle {
+            width: 140px;
+            height: 140px;
+            border: 5px dashed var(--accent-gold);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.1) 0%, transparent 70%);
+            box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.05);
+        }
+
+        .tile {
+            width: 65px;
+            min-height: 65px;
+            background: white;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: grab;
+            box-shadow: 0 4px 0 #94a3b8;
+            flex-shrink: 0;
+            transition: transform 0.1s;
+        }
+        .tile:hover { transform: scale(1.05); }
+
+        .matra-tile { background: var(--accent-gold); box-shadow: 0 4px 0 #b45309; }
+
+        /* TRAY AREA */
+        #tray-container { min-height: 18vh; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .word-tray {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid #334155;
+            border-radius: 15px;
+            justify-content: center;
+        }
+
+        .word-slot {
+            width: 70px;
+            height: 70px;
+            border: 2px dashed #475569;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.2rem;
+            background: rgba(0,0,0,0.2);
+        }
+
+        #message { height: 30px; color: var(--success-green); font-weight: bold; font-size: 1.1rem; }
+        #next-btn { 
+            padding: 10px 25px; 
+            border-radius: 30px; 
+            background: var(--success-green); 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.3);
+        }
+        .hidden { display: none !important; }
+        h3 { font-size: 0.7rem; margin: 0; color: var(--accent-blue); text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <header>
+        <h1>Akshara Alchemist</h1>
+        <div class="controls">
+            <select id="level-selector" onchange="changeMode()">
+                <option value="1">Level 1: Fusion Lab</option>
+                <option value="2">Level 2: Word Smith</option>
+            </select>
+            <div class="progress-container"><div id="progress-bar"></div></div>
+        </div>
+    </header>
+
+    <div id="mission-goal">
+        Target: <span id="target-text">की</span>
+    </div>
+
+    <div class="game-container">
+        <div class="bank">
+            <h3>Consonants</h3>
+            <div id="vyanjan-list" style="display:contents;"></div>
+        </div>
+
+        <div class="forge-area">
+            <div id="transformation-circle" draggable="true" ondragstart="dragForge(event)">?</div>
+            <div id="message"></div>
+            <button id="next-btn" class="hidden" onclick="nextChallenge()">Next Level →</button>
+        </div>
+
+        <div class="bank">
+            <h3>Matras</h3>
+            <div id="matra-list" style="display:contents;"></div>
+        </div>
+    </div>
+
+    <div id="tray-container" class="hidden">
+        <h3>Word Tray</h3>
+        <div class="word-tray" id="word-tray"></div>
+    </div>
+</div>
+
+<script>
+    // [Data remains the same for logic consistency]
+    const level1Data = [
+        { target: "की", v: ["क", "ल"], m: ["ा", "ी"] }, { target: "पु", v: ["प", "न"], m: ["ु", "ू"] },
+        { target: "दे", v: ["द", "म"], m: ["े", "ै"] }, { target: "मो", v: ["म", "स"], m: ["ो", "ौ"] },
+        { target: "रि", v: ["र", "ज"], m: ["ि", "ी"] }, { target: "सा", v: ["स", "प"], m: ["ा", "ु"] },
+        { target: "नू", v: ["न", "त"], m: ["ु", "ू"] }, { target: "है", v: ["ह", "क"], m: ["े", "ै"] },
+        { target: "चो", v: ["च", "ल"], m: ["ो", "ौ"] }, { target: "बी", v: ["ब", "प"], m: ["ि", "ी"] },
+        { target: "टा", v: ["ट", "ड"], m: ["ा", "े"] }, { target: "गौ", v: ["ग", "ज"], m: ["ो", "ौ"] },
+        { target: "खि", v: ["ख", "ग"], m: ["ि", "ी"] }, { target: "पे", v: ["प", "ब"], m: ["े", "ै"] },
+        { target: "धु", v: ["ध", "थ"], m: ["ु", "ू"] }, { target: "लै", v: ["ल", "व"], m: ["े", "ै"] },
+        { target: "नो", v: ["न", "म"], m: ["ो", "ा"] }, { target: "सी", v: ["स", "श"], m: ["ि", "ी"] },
+        { target: "कृ", v: ["क", "भ"], m: ["ृ", "ु"] }, { target: "थै", v: ["थ", "ट"], m: ["े", "ै"] },
+        { target: "जो", v: ["ज", "झ"], m: ["ो", "ौ"] }, { target: "दू", v: ["द", "ब"], m: ["ु", "ू"] },
+        { target: "मी", v: ["म", "ल"], m: ["ि", "ी"] }, { target: "रा", v: ["र", "त"], m: ["ा", "ि"] },
+        { target: "फू", v: ["फ", "प"], m: ["ु", "ू"] }
+    ];
+
+    const level2Data = [
+        { word: "काम", parts: ["का", "म"], v: ["क", "म"], m: ["ा"] },
+        { word: "किताब", parts: ["कि", "ता", "ब"], v: ["क", "त", "ब"], m: ["ि", "ा"] },
+        { word: "मछली", parts: ["म", "छ", "ली"], v: ["म", "छ", "ल"], m: ["ी"] },
+        { word: "गुलाब", parts: ["गु", "ला", "ब"], v: ["ग", "ल", "ब"], m: ["ु", "ा"] },
+        { word: "पेड़", parts: ["पे", "ड़"], v: ["प", "ड़"], m: ["े"] },
+        { word: "सूरज", parts: ["सू", "र", "ज"], v: ["स", "र", "ज"], m: ["ू"] },
+        { word: "टोपी", parts: ["टो", "पी"], v: ["ट", "प"], m: ["ो", "ी"] },
+        { word: "पौधा", parts: ["पौ", "धा"], v: ["प", "ध"], m: ["ौ", "ा"] },
+        { word: "हाथी", parts: ["हा", "थी"], v: ["ह", "थ"], m: ["ा", "ी"] },
+        { word: "चिड़िया", parts: ["चि", "ड़ि", "या"], v: ["च", "ड़", "य"], m: ["ि", "ा"] },
+        { word: "रेल", parts: ["रे", "ल"], v: ["र", "ल"], m: ["े"] },
+        { word: "बैल", parts: ["बै", "ल"], v: ["ब", "ल"], m: ["ै"] },
+        { word: "कौआ", parts: ["कौ", "आ"], v: ["क", "आ"], m: ["ौ"] },
+        { word: "माला", parts: ["मा", "ला"], v: ["म", "ल"], m: ["ा"] },
+        { word: "साधु", parts: ["सा", "धु"], v: ["स", "ध"], m: ["ा", "ु"] },
+        { word: "जूता", parts: ["जू", "ता"], v: ["ज", "त"], m: ["ू", "ा"] },
+        { word: "केला", parts: ["के", "ला"], v: ["क", "ल"], m: ["े", "ा"] },
+        { word: "सैनिक", parts: ["सै", "नि", "क"], v: ["स", "न", "क"], m: ["ै", "ि"] },
+        { word: "मोर", parts: ["मो", "र"], v: ["म", "र"], m: ["ो"] },
+        { word: "कृषि", parts: ["कृ", "षि"], v: ["क", "ष"], m: ["ृ", "ि"] },
+        { word: "सेब", parts: ["से", "ब"], v: ["स", "ब"], m: ["े"] },
+        { word: "पैसा", parts: ["पै", "सा"], v: ["प", "स"], m: ["ै", "ा"] },
+        { word: "ढोल", parts: ["ढो", "ल"], v: ["ढ", "ल"], m: ["ो"] },
+        { word: "नौका", parts: ["नौ", "का"], v: ["न", "क"], m: ["ौ", "ा"] },
+        { word: "वृक्ष", parts: ["वृ", "क्ष"], v: ["व", "क्ष"], m: ["ृ"] }
+    ];
+
+    let currentLevel = 1;
+    let challengeIdx = 0;
+    let forgedV = "";
+    let forgedM = "";
+
+    function changeMode() {
+        currentLevel = parseInt(document.getElementById('level-selector').value);
+        challengeIdx = 0;
+        loadChallenge();
+    }
+
+    function loadChallenge() {
+        const forge = document.getElementById('transformation-circle');
+        const trayCont = document.getElementById('tray-container');
+        const nextBtn = document.getElementById('next-btn');
+        
+        resetForge();
+        nextBtn.classList.add('hidden');
+        updateProgress();
+
+        if (currentLevel === 1) {
+            trayCont.classList.add('hidden');
+            const data = level1Data[challengeIdx];
+            document.getElementById('target-text').innerText = data.target;
+            fillBanks(data.v, data.m);
+        } else {
+            trayCont.classList.remove('hidden');
+            const data = level2Data[challengeIdx];
+            document.getElementById('target-text').innerText = data.word;
+            fillBanks(data.v, data.m);
+            setupTray(data.parts);
+        }
+    }
+
+    function fillBanks(vList, mList) {
+        const vDiv = document.getElementById('vyanjan-list');
+        const mDiv = document.getElementById('matra-list');
+        vDiv.innerHTML = ""; mDiv.innerHTML = "";
+        vList.forEach(v => { vDiv.innerHTML += `<div class="tile" draggable="true" ondragstart="drag(event)" data-type="v">${v}</div>`; });
+        mList.forEach(m => { mDiv.innerHTML += `<div class="tile matra-tile" draggable="true" ondragstart="drag(event)" data-type="m">${m}</div>`; });
+    }
+
+    function setupTray(parts) {
+        const tray = document.getElementById('word-tray');
+        tray.innerHTML = "";
+        parts.forEach(p => { tray.innerHTML += `<div class="word-slot" ondragover="allowDrop(event)" ondrop="dropInTray(event, '${p}')">?</div>`; });
+    }
+
+    function drag(e) { e.dataTransfer.setData("type", e.target.dataset.type); e.dataTransfer.setData("val", e.target.innerText); }
+    function dragForge(e) { e.dataTransfer.setData("type", "forged"); e.dataTransfer.setData("val", e.target.innerText); }
+    function allowDrop(e) { e.preventDefault(); }
+
+    const forge = document.getElementById('transformation-circle');
+    forge.ondragover = allowDrop;
+    forge.ondrop = (e) => {
+        const type = e.dataTransfer.getData("type");
+        const val = e.dataTransfer.getData("val");
+        if (type === "v") { forgedV = val; }
+        if (type === "m") { forgedM = val; }
+        let result = forgedV + forgedM;
+        forge.innerText = result;
+        if (currentLevel === 1 && result === level1Data[challengeIdx].target) victory();
+    };
+
+    function dropInTray(e, targetPart) {
+        e.preventDefault();
+        const val = e.dataTransfer.getData("val");
+        if (val === targetPart) {
+            e.target.innerText = val;
+            e.target.style.borderColor = "var(--success-green)";
+            e.target.style.background = "rgba(74, 222, 128, 0.1)";
+            checkWordComplete();
+        }
+    }
+
+    function checkWordComplete() {
+        const slots = document.querySelectorAll('.word-slot');
+        if (Array.from(slots).every(s => s.innerText !== "?")) victory();
+    }
+
+    function victory() {
+        document.getElementById('message').innerText = "Shabash! Excellent!";
+        document.getElementById('next-btn').classList.remove('hidden');
+    }
+
+    function updateProgress() {
+        const max = currentLevel === 1 ? level1Data.length : level2Data.length;
+        const perc = (challengeIdx / max) * 100;
+        document.getElementById('progress-bar').style.width = perc + "%";
+    }
+
+    function nextChallenge() {
+        challengeIdx++;
+        const max = currentLevel === 1 ? level1Data.length : level2Data.length;
+        if (challengeIdx >= max) {
+            alert("Level Complete!");
+            challengeIdx = 0;
+        }
+        loadChallenge();
+    }
+
+    function resetForge() {
+        forgedV = ""; forgedM = "";
+        forge.innerText = "?";
+        document.getElementById('message').innerText = "";
+    }
+
+    loadChallenge();
+</script>
+
+</body>
+</html>
